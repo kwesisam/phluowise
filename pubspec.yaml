@@ -1,0 +1,76 @@
+name: phluowise
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0-290.4.beta
+
+dependencies:
+  flutter:
+    sdk: flutter
+  another_flutter_splash_screen: ^1.2.1
+  cached_network_image: ^3.4.1
+  carousel_slider: ^5.1.1
+  cupertino_calendar_picker: ^2.2.6
+  dlibphonenumber: ^1.1.48
+  dropdown_search: ^6.0.2
+  flutter_advanced_switch: ^3.1.0
+  flutter_native_splash: ^2.4.6
+  flutter_svg: ^2.2.1
+  flutter_svg_provider: ^1.0.7
+  image_picker: ^1.2.0
+  in_app_update: ^4.2.5
+  intl: ^0.20.2
+  modal_bottom_sheet: ^3.0.0
+  pay_with_paystack: ^1.0.14
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
+  simple_progress_indicators: ^0.2.0
+  url_launcher: ^6.3.2
+  intl_mobile_field: ^2.1.4
+  persistent_bottom_nav_bar_v2: ^6.1.0
+  iconsax: ^0.0.8
+  flutter_expandable_fab: ^2.5.2
+  overlapped_carousel: ^1.0.2
+  contained_tab_bar_view: ^0.8.0
+  lucide_icons: ^0.257.0
+  marquee: ^2.3.0
+  pinput: ^5.0.2
+  camera: ^0.11.3
+  permission_handler: ^12.0.1
+  rename: ^3.1.0
+  appwrite: 17.0.0
+  rxdart: ^0.28.0
+  flutter_datetime_picker_plus: ^2.2.0
+
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Black.ttf
+        - asset: assets/fonts/Roboto-ExtraBold.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+        - asset: assets/fonts/Roboto-Light.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+        - asset: assets/fonts/Roboto-Regular.ttf
+
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/InterTight-Black.ttf
+        - asset: assets/fonts/InterTight-ExtraBold.ttf
+        - asset: assets/fonts/InterTight-Bold.ttf
+        - asset: assets/fonts/InterTight-Light.ttf
+        - asset: assets/fonts/InterTight-Medium.ttf
+        - asset: assets/fonts/InterTight-Regular.ttf       
+  assets:
+    - assets/icons/
+    - assets/images/
