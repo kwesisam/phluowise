@@ -3,8 +3,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:phluowise/contants/app_color.dart';
 import 'package:phluowise/contants/app_image.dart';
+import 'package:phluowise/controllers/appwrite_controller.dart';
 import 'package:phluowise/extensions/context_extension.dart';
 import 'package:phluowise/screens/auth/sign_in.dart';
+import 'package:phluowise/tabs.dart';
 import 'package:phluowise/utils/hexColor.dart';
 import 'package:phluowise/utils/validations.dart';
 import 'package:phluowise/widgets/button.dart';
@@ -24,11 +26,133 @@ class _SignUpState extends State<SignUp> {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
 
+  String formError = '';
+
+  bool isLoading = false;
+
   //MARK: Creating an account
-  void createAccount() {
+  void createAccount() async {
     if (formKey.currentState!.validate()) {
-      try {} catch (e) {}
+      setState(() {
+        isLoading = true;
+        formError = '';
+      });
+
+      try {
+        final res = await AppwriteAuthProvider().createAccount(
+          email: emailController.text,
+          password: passwordController.text,
+          fullname: fullNameController.text,
+          phone: phoneController.text,
+        );
+
+        if (res['status'] == true) {
+          showSignUpSucces();
+        } else {
+          setState(() {
+            formError = res['message'];
+          });
+        }
+      } catch (e) {
+        print(e);
+        setState(() {
+          formError = 'Something went wrong while signing up, try again.';
+        });
+      } finally {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
+  }
+
+  void showSignUpSucces() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 10,
+          insetPadding: const EdgeInsets.all(10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Spacer(),
+
+              Container(
+                height: context.screenHeight * .45,
+                width: context.screenWidth * 0.85,
+                clipBehavior: Clip.hardEdge,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Center(
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: HexColor('#40444B'),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(AppImages.check),
+
+                        SizedBox(height: 24),
+
+                        Text(
+                          'Success !',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Roboto',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        SizedBox(height: 11),
+
+                        Text(
+                          'You have Signup successfully! Check your email to confirm code sent to you.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Roboto',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        SizedBox(height: 25),
+
+                        SizedBox(
+                          width: 200,
+                          child: Button(
+                            buttonText: 'Okay',
+                            borderRadius: 20,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              pushScreen(context, screen: Tabs());
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              Spacer(),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -185,12 +309,27 @@ class _SignUpState extends State<SignUp> {
                               SizedBox(
                                 width: double.infinity,
                                 child: Button(
-                                  buttonText: 'Create An Account',
+                                  buttonText: isLoading
+                                      ? 'Creating Account...'
+                                      : 'Create An Account',
                                   borderRadius: 16,
                                   height: 56,
-                                  onPressed: createAccount,
+                                  onPressed: isLoading ? () {} : createAccount,
                                 ),
                               ),
+
+                              if (formError.isNotEmpty)
+                                Center(
+                                  child: Text(
+                                    formError,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: HexColor('#CCE46363'),
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
 
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -11,9 +11,11 @@ import 'package:phluowise/extensions/context_extension.dart';
 import 'package:phluowise/models/branch_model.dart';
 import 'package:phluowise/screens/sub/branch_details.dart';
 import 'package:phluowise/screens/sub/profile.dart';
+import 'package:phluowise/services/preferences_service.dart';
 import 'package:phluowise/utils/hexColor.dart';
 import 'package:phluowise/widgets/button.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart' as Per;
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -23,13 +25,167 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  final ScrollController _gridScrollController = ScrollController();
+
   bool isAround = true;
   bool isGrid = true;
+
+  void initState() {
+    super.initState();
+
+    // PreferenceService().setBool(
+    //                           'showHomeLocation',
+    //                           true,
+    //                         );
+    _checkLocationPermission();
+  }
+
+  Future<void> _checkLocationPermission() async {
+    final status = await Per.Permission.location.status;
+    dynamic showHomeLocation = await PreferenceService().getBool(
+      'showHomeLocation',
+    );
+
+    if (status.isDenied) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (showHomeLocation == false) return;
+        showLocationRequest();
+      });
+    }
+
+    if (status.isPermanentlyDenied) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (showHomeLocation == false) return;
+        showLocationRequest();
+      });
+    }
+  }
+
+  void showLocationRequest() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 10,
+          insetPadding: const EdgeInsets.all(10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Spacer(),
+
+              Container(
+                height: context.screenHeight * .5,
+                width: context.screenWidth * 0.85,
+                clipBehavior: Clip.hardEdge,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Center(
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: HexColor('#40444B'),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(AppImages.locationreq),
+
+                        SizedBox(height: 24),
+
+                        Text(
+                          'Location Permission',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Roboto',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        SizedBox(height: 11),
+
+                        Text(
+                          'Companies Want To Access Your Location For Delivery.\nGrant Access',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Roboto',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        SizedBox(height: 25),
+
+                        SizedBox(
+                          width: 200,
+                          child: Button(
+                            buttonText: 'Deny',
+                            borderRadius: 20,
+                            type: 'danger',
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              PreferenceService().setBool(
+                                'showHomeLocation',
+                                false,
+                              );
+                            },
+                          ),
+                        ),
+
+                        SizedBox(height: 15),
+
+                        SizedBox(
+                          width: 200,
+                          child: Button(
+                            buttonText: 'Allow',
+                            borderRadius: 20,
+                            onPressed: () async {
+                              Navigator.of(context).pop();
+
+                              final result = await Per.Permission.location
+                                  .request();
+
+                              if (result.isGranted) {
+                                debugPrint('Location permission granted');
+                              } else if (result.isDenied) {
+                                debugPrint('Location permission denied');
+                              } else if (result.isPermanentlyDenied) {
+                                await Per.openAppSettings();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              Spacer(),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeController = context.read<ThemeController>();
     final appWrite = context.watch<AppwriteAuthProvider>();
+
 
     return Scaffold(
       appBar: PreferredSize(
@@ -103,13 +259,31 @@ class _HomeState extends State<Home> {
 
   Widget search() {
     return TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value.toLowerCase();
+        });
+
+        if (_gridScrollController.hasClients) {
+          _gridScrollController.jumpTo(0);
+        }
+      },
+      style: TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 15,
+        fontFamily: 'Inter',
+        color: Colors.white,
+      ),
       decoration: InputDecoration(
         fillColor: HexColor('#40444B'),
         filled: true,
         hintText: 'Search',
+
         hintStyle: TextStyle(
           fontWeight: FontWeight.w500,
           fontSize: 15,
+          fontFamily: 'Inter',
           color: Colors.white,
         ),
         border: OutlineInputBorder(
@@ -199,7 +373,27 @@ class _HomeState extends State<Home> {
           return const Center(child: Text('No branches available'));
         }
 
-        return isGrid ? _buildGrid(context, branches) : _buildList(branches);
+        final filteredBranches = branches.where((branch) {
+          final name = branch['branch_name'].toString().toLowerCase();
+          final city = branch['location'].toString().toLowerCase();
+          return name.contains(_searchQuery) ||
+              city.contains(_searchQuery) ||
+              name.startsWith(_searchQuery) ||
+              city.startsWith(_searchQuery);
+        }).toList();
+
+        if (filteredBranches.isEmpty) {
+          return const Center(
+            child: Text(
+              'No branches found',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        }
+
+        return isGrid
+            ? _buildGrid(context, filteredBranches)
+            : _buildList(filteredBranches);
       },
     );
   }
@@ -211,6 +405,7 @@ class _HomeState extends State<Home> {
       child: SizedBox(
         width: screenWidth * 0.95,
         child: GridView.builder(
+          key: ValueKey(_searchQuery), //controller: _gridScrollController,
           shrinkWrap: true,
           itemCount: branches.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -244,7 +439,7 @@ class _HomeState extends State<Home> {
 
     return InkWell(
       onTap: () {
-        pushScreenWithoutNavBar(context, BranchDetails(branch:  branch,));
+        pushScreenWithoutNavBar(context, BranchDetails(branch: branch));
       },
       borderRadius: BorderRadius.circular(15),
       child: Container(
@@ -344,7 +539,7 @@ class _HomeState extends State<Home> {
 
     return InkWell(
       onTap: () {
-        pushScreenWithoutNavBar(context, BranchDetails(branch:  branch,));
+        pushScreenWithoutNavBar(context, BranchDetails(branch: branch));
       },
       child: Container(
         width: double.infinity,

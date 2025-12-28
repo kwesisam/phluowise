@@ -1,3 +1,4 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
@@ -8,6 +9,7 @@ import 'package:phluowise/extensions/context_extension.dart';
 import 'package:phluowise/screens/auth/sign_up.dart';
 import 'package:phluowise/services/wrapper.dart';
 import 'package:phluowise/tabs.dart';
+import 'package:phluowise/utils/hexColor.dart';
 import 'package:phluowise/utils/validations.dart';
 import 'package:phluowise/widgets/button.dart';
 import 'package:phluowise/widgets/input_field.dart';
@@ -24,26 +26,35 @@ class _SignInState extends State<SignIn> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
+  String formError = '';
+
   bool isLoading = false;
 
   void signIn() async {
     if (formKey.currentState!.validate()) {
       setState(() {
         isLoading = true;
+        formError = '';
       });
 
       try {
-        print(emailController.text);
-        await AppwriteAuthProvider().login(
+        final res = await AppwriteAuthProvider().login(
           email: emailController.text,
           password: passwordController.text,
         );
 
-        pushScreen(context, screen: Tabs());
-
-       
+        if (res['status'] == true) {
+          showSignInSucces();
+        } else {
+          setState(() {
+            formError = res['message'];
+          });
+        }
       } catch (e) {
         print(e);
+        setState(() {
+          formError = 'Something went wrong while signing in, try again.';
+        });
       } finally {
         setState(() {
           isLoading = false;
@@ -52,10 +63,100 @@ class _SignInState extends State<SignIn> {
     }
   }
 
+  void showSignInSucces() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 10,
+          insetPadding: const EdgeInsets.all(10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Spacer(),
+          
+              Container(
+                height: context.screenHeight * .43,
+                width: context.screenWidth * 0.85,
+                clipBehavior: Clip.hardEdge,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Center(
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: HexColor('#40444B'),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(AppImages.check),
+          
+                        SizedBox(height: 24),
+          
+                        Text(
+                          'Success !',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Roboto',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+          
+                        SizedBox(height: 11),
+          
+                        Text(
+                          'You have Login Successfully',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Roboto',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+          
+                        SizedBox(height: 25),
+          
+                        SizedBox(
+                          width: 200,
+                          child: Button(
+                            buttonText: 'Continue',
+                            borderRadius: 20,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              pushScreen(context, screen: Tabs());
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          
+              Spacer(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     emailController.clear();
     passwordController.clear();
+    formError = '';
     super.dispose();
   }
 
@@ -175,6 +276,19 @@ class _SignInState extends State<SignIn> {
                                       : signIn,
                                 ),
                               ),
+
+                              if (formError.isNotEmpty)
+                                Center(
+                                  child: Text(
+                                    formError,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: HexColor('#CCE46363'),
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
 
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,

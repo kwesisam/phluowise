@@ -1,10 +1,17 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:phluowise/contants/app_color.dart';
 import 'package:phluowise/contants/app_image.dart';
+import 'package:phluowise/controllers/appwrite_controller.dart';
+import 'package:phluowise/controllers/theme_controller.dart';
 import 'package:phluowise/extensions/context_extension.dart';
+import 'package:phluowise/models/branch_model.dart';
+import 'package:phluowise/models/product_model.dart';
 import 'package:phluowise/utils/hexColor.dart';
 import 'package:phluowise/widgets/button.dart';
+import 'package:provider/provider.dart';
 
 class Service extends StatefulWidget {
   const Service({super.key});
@@ -14,8 +21,35 @@ class Service extends StatefulWidget {
 }
 
 class _ServiceState extends State<Service> {
+  int _current = 0;
+  int _totalPages = 2;
+  final CarouselSliderController _controller = CarouselSliderController();
+
+  bool isCarousel = false;
+
+  void _goBack() {
+    if (_current > 0) {
+      setState(() {
+        _current--;
+      });
+      _controller.animateToPage(_current);
+    }
+  }
+
+  void _goForward() {
+    if (_current < _totalPages - 1) {
+      setState(() {
+        _current++;
+      });
+      _controller.animateToPage(_current);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeController = context.read<ThemeController>();
+    final appWrite = context.watch<AppwriteAuthProvider>();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -29,15 +63,29 @@ class _ServiceState extends State<Service> {
                   spacing: 8,
                   children: [
                     Expanded(child: search()),
-                    Container(
-                      width: 42,
-                      height: 42,
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: HexColor('#292B2F'),
-                        borderRadius: BorderRadius.circular(10),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          isCarousel = !isCarousel;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: HexColor('#292B2F'),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: SvgPicture.asset(
+                          AppImages.document,
+                          color: isCarousel
+                              ? HexColor('#3B74FF')
+                              : HexColor('#E6E6E6'),
+                        ),
                       ),
-                      child: SvgPicture.asset(AppImages.document),
                     ),
                   ],
                 ),
@@ -55,9 +103,7 @@ class _ServiceState extends State<Service> {
               child: Center(
                 child: SizedBox(
                   width: context.screenWidth * .85,
-                  child: SingleChildScrollView(
-                    child: Column(spacing: 31, children: [card(), card()]),
-                  ),
+                  child: content(isCarousel: isCarousel),
                 ),
               ),
             ),
@@ -68,8 +114,6 @@ class _ServiceState extends State<Service> {
       ),
     );
   }
-
-
 
   Widget search() {
     return TextField(
@@ -104,12 +148,116 @@ class _ServiceState extends State<Service> {
     );
   }
 
-  Widget content() {
-    return Container();
+  Widget content({required bool isCarousel}) {
+    return Consumer<AppwriteAuthProvider>(
+      builder: (context, provider, child) {
+        final branches = provider.branches;
+
+        if (branches.isEmpty) {
+          return const Center(child: Text('No branches available'));
+        }
+
+        _totalPages = branches.length;
+
+        return isCarousel
+            ? _buildCarousel(context, branches)
+            : _buildList(context, branches);
+      },
+    );
   }
-  Widget card() {
+
+  Widget _buildCarousel(
+    BuildContext context,
+    List<Map<String, dynamic>> branches,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 20,
+      children: [
+        CarouselSlider(
+          carouselController: _controller,
+          options: CarouselOptions(
+            height: context.screenHeight * .61,
+            viewportFraction: 1,
+            enlargeCenterPage: false,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _current = index;
+              });
+            },
+          ),
+
+          items: branches.asMap().entries.map((entry) {
+            final index = entry.key;
+            final branch = Branch.fromJson(entry.value);
+
+            return Builder(
+              builder: (BuildContext context) {
+                return card(branch: branch);
+              },
+            );
+          }).toList(),
+        ),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(100),
+              onTap: _goBack,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  color: HexColor('#3A3C40'),
+                ),
+                child: Center(child: SvgPicture.asset(AppImages.megarefresh)),
+              ),
+            ),
+
+            InkWell(
+              borderRadius: BorderRadius.circular(100),
+              onTap: _goForward,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  color: HexColor('#3A3C40'),
+                ),
+                child: Center(child: SvgPicture.asset(AppImages.outlineright)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildList(BuildContext context, List<Map<String, dynamic>> branches) {
+    return SingleChildScrollView(
+      child: Column(
+        spacing: 31,
+        children: branches.asMap().entries.map((entry) {
+          final index = entry.key;
+          final branch = Branch.fromJson(entry.value);
+
+          return Builder(
+            builder: (BuildContext context) {
+              return card(branch: branch);
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget card({required Branch branch}) {
+    final appWrite = context.read<AppwriteAuthProvider>();
+
     return Container(
-      height: 540,
+      height: 545,
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -120,18 +268,32 @@ class _ServiceState extends State<Service> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Container(
+              //   height: 135,
+              //   width: double.infinity,
+              //   decoration: BoxDecoration(
+              //     image: DecorationImage(
+              //       image: AssetImage(AppImages.image2),
+              //       fit: BoxFit.cover,
+              //     ),
+              //   ),
+              // ),
               Container(
                 height: 135,
-                width: double.infinity,
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage(AppImages.image2),
                     fit: BoxFit.cover,
+                    image:
+                        branch.headerImage != null &&
+                            branch.headerImage!.isNotEmpty
+                        ? CachedNetworkImageProvider(branch.headerImage!)
+                        : const AssetImage("assets/images/image2.png")
+                              as ImageProvider,
                   ),
                 ),
               ),
 
-              SizedBox(height: 55,),
+              SizedBox(height: 55),
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -139,7 +301,7 @@ class _ServiceState extends State<Service> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Name of Company',
+                      branch.branchName ?? '',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -148,27 +310,31 @@ class _ServiceState extends State<Service> {
                       ),
                     ),
 
-                    RichText(
-                      text: TextSpan(
-                        text: 'location',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: ' 10min away',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: HexColor('#2C9043'),
-                            ),
+                    Row(
+                      spacing: 5,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text(
+                          branch.location ?? '',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
+                        ),
+
+                        Text(
+                          '10min away',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: HexColor('#2C9043'),
+                          ),
+                        ),
+                      ],
                     ),
 
                     SizedBox(height: 30),
@@ -186,136 +352,114 @@ class _ServiceState extends State<Service> {
                             color: HexColor('#99FFFFFF'),
                           ),
                         ),
-                        Row(
-                          spacing: 6,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Column(
-                              children: [
-                                Container(
-                                  width: 83,
-                                  height: 83,
-                                  decoration: BoxDecoration(
-                                    color: HexColor('#292B2F'),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
+
+                        FutureBuilder<List<Product>>(
+                          future: appWrite.loadBranchProducts(
+                            branchId: branch.branchId,
+                          ),
+
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return SizedBox(
+                                height: 140,
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
                                 ),
+                              );
+                            }
 
-                                SizedBox(height: 11),
-
-                                Text(
-                                  'GHS 20.00',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Inter',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                            if (snapshot.hasError) {
+                              return SizedBox(
+                                height: 140,
+                                child: Center(
+                                  child: Text("Failed to load products"),
                                 ),
+                              );
+                            }
 
-                                SizedBox(height: 13),
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return SizedBox(
+                                height: 140,
+                                child: Center(
+                                  child: Text("No products available"),
+                                ),
+                              );
+                            }
 
-                                Row(
-                                  spacing: 5,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    SvgPicture.asset(AppImages.starhalf),
-                                    Text(
-                                      '4 star rating',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
+                            final products = snapshot.data!;
+
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              clipBehavior: Clip.hardEdge,
+                              child: Row(
+                                spacing: 6,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: products.asMap().entries.map((entry) {
+                                  final index = entry.key;
+
+                                  final product = products[index];
+
+                                  return Column(
+                                    children: [
+                                      Container(
+                                        width: 83,
+                                        height: 83,
+                                        decoration: BoxDecoration(
+                                          color: HexColor('#292B2F'),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          image: DecorationImage(
+                                            fit: BoxFit.cover,
+                                            image: CachedNetworkImageProvider(
+                                              product.productImage,
+                                            ),
+                                            // const AssetImage(
+                                            //         "assets/images/image2.png",
+                                            //       )
+                                            //       as ImageProvider,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
 
-                            Column(
-                              children: [
-                                Container(
-                                  width: 83,
-                                  height: 83,
-                                  decoration: BoxDecoration(
-                                    color: HexColor('#292B2F'),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                SizedBox(height: 11),
-                                Text(
-                                  'GHS 20.00',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Inter',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(height: 13),
+                                      SizedBox(height: 11),
 
-                                Row(
-                                  spacing: 5,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    SvgPicture.asset(AppImages.star),
-                                    Text(
-                                      '4 star rating',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
+                                      Text(
+                                        'GHS 20.00',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Inter',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
 
-                            Column(
-                              children: [
-                                Container(
-                                  width: 83,
-                                  height: 83,
-                                  decoration: BoxDecoration(
-                                    color: HexColor('#292B2F'),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                SizedBox(height: 11),
-                                Text(
-                                  'GHS 20.00',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Inter',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(height: 13),
+                                      SizedBox(height: 13),
 
-                                Row(
-                                  spacing: 5,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    SvgPicture.asset(AppImages.star),
-                                    Text(
-                                      '4 star rating',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
+                                      Row(
+                                        spacing: 5,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          SvgPicture.asset(AppImages.starhalf),
+                                          Text(
+                                            '4 star rating',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: 'Inter',
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -345,7 +489,22 @@ class _ServiceState extends State<Service> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
                 color: HexColor('#292B2F'),
-                border: Border.all(width: 6, color: HexColor('#40444B'))
+                border: Border.all(width: 6, color: HexColor('#40444B')),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child:
+                    branch.profileImage != null &&
+                        branch.profileImage!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: branch.profileImage!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) =>
+                            Container(color: Colors.grey[300]),
+                        errorWidget: (_, __, ___) =>
+                            Image.asset(AppImages.image1, fit: BoxFit.cover),
+                      )
+                    : Image.asset(AppImages.image1, fit: BoxFit.cover),
               ),
             ),
           ),

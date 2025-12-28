@@ -21,6 +21,7 @@ class _OnboardingState extends State<Onboarding> {
   int _current = 0;
   final CarouselSliderController _controller = CarouselSliderController();
   List<String> items = [AppImages.ob1, AppImages.ob2];
+  
 
   @override
   Widget build(BuildContext context) {
@@ -123,31 +124,33 @@ class _OnboardingState extends State<Onboarding> {
                         ),
                       ),
                     ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'By continuing you ',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
-                        ),
-
-                        Flexible(
-                          child: InkWell(
-                            onTap: () {},
-                            child: Text(
-                              'Agree To Our Terms Of Service & Privacy Policy',
-                              style: TextStyle(
-                                color: Colors.white,
-                                decoration: TextDecoration.underline,
-                                decorationStyle: TextDecorationStyle.solid,
-                                decorationColor: Colors.white,
-                                fontSize: 14,
+                    Container(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'By continuing you ',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                      
+                          Flexible(
+                            child: InkWell(
+                              onTap: () {},
+                              child: Text(
+                                'Agree To Our Terms Of Service & Privacy Policy',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  decoration: TextDecoration.underline,
+                                  decorationStyle: TextDecorationStyle.solid,
+                                  decorationColor: Colors.white,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

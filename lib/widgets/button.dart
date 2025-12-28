@@ -39,6 +39,8 @@ class Button extends StatelessWidget {
               ? HexColor('#FDFFEC')
               : type == 'transparent'
               ? Colors.transparent
+              : type == 'danger'
+              ? HexColor('#F57D7D')
               : AppColors.primary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadiusGeometry.circular(borderRadius ?? 7),
@@ -49,6 +51,8 @@ class Button extends StatelessWidget {
                   ? HexColor('#FDFFEC')
                   : type == 'transparent'
                   ? Colors.transparent
+                  : type == 'danger'
+                  ? HexColor('#F57D7D')
                   : AppColors.primary,
             ),
           ),

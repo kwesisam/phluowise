@@ -47,6 +47,11 @@ class AppImages {
   static const String document= 'assets/icons/document.svg';
   static const String star= 'assets/icons/star.svg';
   static const String starhalf= 'assets/icons/starhalf.svg';
+  static const String megarefresh = 'assets/icons/megarefresh.svg';
+  static const String outlineright= 'assets/icons/outlineright.svg';
+  static const String star2= 'assets/icons/star2.svg';
+  static const String send= 'assets/icons/send.svg';
+  static const String call= 'assets/icons/call.svg';
 
   static const String logo = 'assets/images/logo.png';
   static const String ob1 = 'assets/images/ob1.png';
@@ -55,4 +60,6 @@ class AppImages {
   static const String image2 = 'assets/images/image2.png';
   static const String cash = 'assets/images/cash.png';
   static const String pickup = 'assets/images/pickup.png';
+  static const String check = 'assets/images/check.png';
+  static const String locationreq = 'assets/images/locationreq.png';
 }

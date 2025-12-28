@@ -27,7 +27,7 @@ class _WrapperState extends State<Wrapper> {
 
   Future<void> _initApp() async {
     final appWrite = context.read<AppwriteAuthProvider>();
-    await appWrite.loadUser(); // ← Wait for real auth check
+    await appWrite.loadUser(); 
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -38,6 +38,8 @@ class _WrapperState extends State<Wrapper> {
     final appWrite = context.watch<AppwriteAuthProvider>();
     final preferenceService = PreferenceService();
 
+
+
     if (_isLoading || appWrite.isInitializing) {
       return Scaffold(
         body: Center(
@@ -45,6 +47,8 @@ class _WrapperState extends State<Wrapper> {
         ),
       );
     }
+
+    print(appWrite.isLoggedIn);
 
     if (appWrite.isLoggedIn) {
       return const Tabs();

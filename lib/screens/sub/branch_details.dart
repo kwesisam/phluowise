@@ -5,8 +5,7 @@ import 'package:carousel_slider/carousel_controller.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
-    hide LocaleType;
+
 import 'package:flutter_svg/svg.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:phluowise/contants/app_color.dart';
@@ -15,7 +14,10 @@ import 'package:phluowise/controllers/appwrite_controller.dart';
 import 'package:phluowise/controllers/theme_controller.dart';
 import 'package:phluowise/extensions/context_extension.dart';
 import 'package:phluowise/models/branch_model.dart';
+import 'package:phluowise/models/comment_model.dart';
 import 'package:phluowise/models/product_model.dart';
+import 'package:phluowise/models/user_model.dart';
+import 'package:phluowise/models/workdingdays_model.dart';
 import 'package:phluowise/utils/hexColor.dart';
 import 'package:phluowise/widgets/button.dart';
 import 'package:phluowise/widgets/dropdown.dart';
@@ -23,6 +25,7 @@ import 'package:phluowise/widgets/expandable_text.dart';
 import 'package:phluowise/widgets/input_field.dart';
 import 'package:phluowise/widgets/product_list_card.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 List<String> daysOfWeek = [
   'Sunday',
@@ -48,11 +51,13 @@ class _BranchDetailsState extends State<BranchDetails> {
   bool _pinned = true;
   bool _snap = false;
   bool _floating = true;
+  bool showAddRating = false;
 
   String? selectDay = 'Monday';
   String? selectMono;
   String? openTime = 'Not set';
   String? closeTime = 'Not set';
+  List<WorkingDay>? workingDaysData;
 
   int view = 1;
 
@@ -60,6 +65,7 @@ class _BranchDetailsState extends State<BranchDetails> {
   final CarouselSliderController _controller = CarouselSliderController();
   List<String> items = [AppImages.image1, AppImages.image2];
   List<Product>? staticProduct;
+  List<String>? uniqueProductTypes;
 
   List<TextEditingController> productControllers = [];
   List<bool> productSwitches = [];
@@ -67,10 +73,20 @@ class _BranchDetailsState extends State<BranchDetails> {
 
   double get grandTotal => totals.fold(0.0, (sum, element) => sum + element);
 
+  UserModel? userData;
+  TextEditingController commentController = TextEditingController();
+  int curRating = 0;
+  List<String> productTag = [];
+
+  final formKey = GlobalKey<FormState>();
+  bool isLoading = false;
+
+  bool showBranchContact = false;
+
   @override
   void initState() {
     super.initState();
-
+    _init();
     for (int i = 0; i < productControllers.length; i++) {
       productControllers[i].addListener(() {
         _updateTotalForIndex(i);
@@ -93,8 +109,99 @@ class _BranchDetailsState extends State<BranchDetails> {
     setState(() {}); // Rebuild UI to update total
   }
 
-  // MARK: Models
+  void _init() {
+    Future.microtask(() async {
+      final authProvider = Provider.of<AppwriteAuthProvider>(
+        context,
+        listen: false,
+      );
 
+      final resWorkingDays = await authProvider.loadBranchWorkingDays(
+        branchId: widget.branch.branchId,
+      );
+
+      workingDaysData = resWorkingDays;
+
+      userData = authProvider.userData;
+
+      await authProvider.loadInitialBranchesComment(
+        branchId: widget.branch.branchId,
+      );
+
+      authProvider.setupRealtimeLoadBranchComment(
+        branchId: widget.branch.branchId,
+      );
+    });
+  }
+
+  void handleSumbit() async {
+    if (!formKey.currentState!.validate()) return;
+    if (userData == null) return;
+
+    try {
+      setState(() => isLoading = true);
+
+      final res = await AppwriteAuthProvider().createComment(
+        commentId: 'COM-${DateTime.now().millisecondsSinceEpoch}',
+        authorId: userData!.uid ?? '',
+        content: commentController.text.trim(),
+        authorName: userData!.fullName ?? '',
+        productTag: productTag,
+        rating: curRating.toDouble(),
+        branchId: widget.branch.branchId,
+      );
+
+      if (res['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Comment submitted successfully',
+              style: TextStyle(fontFamily: 'Inter', fontSize: 16),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        commentController.clear();
+        setState(() {
+          productTag.clear();
+          curRating = 0;
+          showAddRating = false;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              res['message'] ?? 'Something went wrong',
+              style: TextStyle(fontFamily: 'Inter', fontSize: 16),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Failed to submit comment. Please try again.',
+            style: TextStyle(fontFamily: 'Inter', fontSize: 16),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    await launchUrl(launchUri);
+  }
+
+  // MARK: Models
   void showProduct() {
     showDialog(
       context: context,
@@ -672,23 +779,23 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         InkWell(
                           onTap: () {
-                            DatePicker.showDatePicker(
-                              context,
-                              showTitleActions: true,
-                              minTime: DateTime.now(),
-                              maxTime: DateTime(
-                                DateTime.now().year + 2,
-                                DateTime.now().month,
-                                DateTime.now().day,
-                              ),
-                              onChanged: (date) {
-                                print('change $date');
-                              },
-                              onConfirm: (date) {
-                                print('confirm $date');
-                              },
-                              currentTime: DateTime.now(),
-                            );
+                            // DatePicker.showDatePicker(
+                            //   context,
+                            //   showTitleActions: true,
+                            //   minTime: DateTime.now(),
+                            //   maxTime: DateTime(
+                            //     DateTime.now().year + 2,
+                            //     DateTime.now().month,
+                            //     DateTime.now().day,
+                            //   ),
+                            //   onChanged: (date) {
+                            //     print('change $date');
+                            //   },
+                            //   onConfirm: (date) {
+                            //     print('confirm $date');
+                            //   },
+                            //   currentTime: DateTime.now(),
+                            // );
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
@@ -747,18 +854,18 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         InkWell(
                           onTap: () {
-                            DatePicker.showTimePicker(
-                              context,
-                              showTitleActions: true,
+                            // DatePicker.showTimePicker(
+                            //   context,
+                            //   showTitleActions: true,
 
-                              onChanged: (date) {
-                                print('change $date');
-                              },
-                              onConfirm: (date) {
-                                print('confirm $date');
-                              },
-                              currentTime: DateTime.now(),
-                            );
+                            //   onChanged: (date) {
+                            //     print('change $date');
+                            //   },
+                            //   onConfirm: (date) {
+                            //     print('confirm $date');
+                            //   },
+                            //   currentTime: DateTime.now(),
+                            // );
                           },
 
                           child: Container(
@@ -2089,6 +2196,11 @@ class _BranchDetailsState extends State<BranchDetails> {
                 floating: _floating,
                 expandedHeight: 175,
                 leading: IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: themeController.isDarkMode
+                        ? HexColor('#4D40444B')
+                        : HexColor('#40444B'),
+                  ),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -2268,6 +2380,29 @@ class _BranchDetailsState extends State<BranchDetails> {
                 setState(() {
                   selectDay = value;
                 });
+
+                WorkingDay? result;
+
+                try {
+                  result = workingDaysData!.firstWhere(
+                    (ele) => ele.day.toLowerCase() == value!.toLowerCase(),
+                  );
+                } catch (_) {
+                  result = null;
+                }
+
+                if (result != null) {
+                  final parts = result.time.split('-');
+                  setState(() {
+                    openTime = parts.first;
+                    closeTime = parts.last;
+                  });
+                } else {
+                  setState(() {
+                    openTime = 'Not set';
+                    closeTime = 'Not set';
+                  });
+                }
               },
             ),
           ),
@@ -2460,9 +2595,99 @@ class _BranchDetailsState extends State<BranchDetails> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 25,
       children: [
-        Container(
-          height: 255,
-          decoration: BoxDecoration(color: Colors.grey.shade100),
+        Stack(
+          children: [
+            Container(
+              height: 255,
+              decoration: BoxDecoration(color: Colors.grey.shade100),
+            ),
+
+            Positioned(
+              right: 22,
+              bottom: 4,
+              child: Container(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  spacing: 10,
+                  children: [
+                    if (showBranchContact)
+                      Container(
+                        width: 250,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 30,
+                        ),
+                        decoration: BoxDecoration(
+                          color: HexColor('#292B2F'),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          children: [widget.branch.phoneNumber]
+                              .map(
+                                (ele) => GestureDetector(
+                                  onTap: () {
+                                    _makePhoneCall(ele ?? '');
+                                  },
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    spacing: 20,
+                                    children: [
+                                      SvgPicture.asset(AppImages.call),
+
+                                      Text(
+                                        ele ?? '',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Inter',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              showBranchContact = !showBranchContact;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 54,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: HexColor('#292B2F'),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  offset: Offset(0, 4),
+                                  blurRadius: 5,
+                                  color: HexColor('#40000000'),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: SvgPicture.asset(AppImages.call),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
 
         Padding(
@@ -2501,6 +2726,13 @@ class _BranchDetailsState extends State<BranchDetails> {
         final products = snapshot.data!;
 
         staticProduct = products;
+
+        uniqueProductTypes = products
+            .map((p) => p.productType)
+            .toSet()
+            .toList();
+
+        print(uniqueProductTypes);
 
         productControllers = List.generate(
           staticProduct?.length ?? 0,
@@ -2662,6 +2894,444 @@ class _BranchDetailsState extends State<BranchDetails> {
   }
 
   Widget rating() {
-    return Container();
+    return Stack(
+      children: [
+        Consumer<AppwriteAuthProvider>(
+          builder: (context, provider, child) {
+            final res = provider.branchComments;
+
+            if (res.isEmpty) {
+              return const Center(child: Text('No branch comments available'));
+            }
+
+            final List<Comment> branchComments = res
+                .map((e) => Comment.fromMap(e))
+                .toList();
+
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+
+                    children: [
+                      SizedBox(height: 20),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                text: '3.0',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Roboto',
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: ' rating',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Roboto',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Text(
+                              '200 reviews',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Roboto',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: 20),
+
+                      Column(
+                        spacing: 10,
+                        children: [1, 2, 3, 4, 5]
+                            .map(
+                              (ele) => Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                spacing: 12,
+                                children: [
+                                  Text(
+                                    '5',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Roboto',
+                                      fontSize: 16,
+                                    ),
+                                  ),
+
+                                  Expanded(
+                                    child: Container(
+                                      height: 15,
+                                      decoration: BoxDecoration(
+                                        color: HexColor('#40444B'),
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                    ),
+                                  ),
+
+                                  Text(
+                                    '0%',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Roboto',
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                            .toList(),
+                      ),
+
+                      SizedBox(height: 25),
+
+                      Text(
+                        'All Reviews',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
+                      SizedBox(height: 25),
+
+                      ListView.builder(
+                        itemCount: branchComments.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemBuilder: (_, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 30),
+                          child: commentCard(
+                            branchCommet: branchComments[index],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                commentForm(),
+                const SizedBox(height: 20),
+              ],
+            );
+          },
+        ),
+        if (showAddRating == true)
+          Positioned(
+            bottom: 100,
+            left: 20,
+            right: 20,
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(50),
+                    color: HexColor('#202230'),
+                  ),
+                  child: Row(
+                    spacing: 10,
+                    children: [1, 2, 3, 4, 5].map((ele) {
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            curRating = ele;
+                          });
+                        },
+                        child: SvgPicture.asset(
+                          AppImages.star,
+                          color: ele <= curRating
+                              ? HexColor('#FFCB45') // selected
+                              : HexColor('#F2F2F2'),
+                          width: 20,
+                          height: 20,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                SizedBox(width: 20),
+
+                if (uniqueProductTypes != null)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: uniqueProductTypes!
+                            .map(
+                              (ele) => InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    if (productTag.contains(ele)) {
+                                      productTag.remove(ele);
+                                    } else {
+                                      productTag.add(ele);
+                                    }
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(100),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 5,
+                                    horizontal: 15,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: productTag.contains(ele)
+                                        ? HexColor('#3B74FF')
+                                        : HexColor('#40444B'),
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Text(
+                                    ele,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Inter',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget commentCard({required Comment branchCommet}) {
+    return Container(
+      child: Column(
+        children: [
+          Row(
+            spacing: 18,
+            children: [
+              Container(
+                width: 63,
+                height: 63,
+                decoration: BoxDecoration(
+                  color: HexColor('#D9D9D9'),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 12,
+                children: [
+                  Center(
+                    child: Text(
+                      branchCommet.authorName,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  Row(
+                    spacing: 20,
+                    children: [
+                      Row(
+                        spacing: 3,
+                        children: [1, 2, 3, 4, 5]
+                            .map(
+                              (ele) => SvgPicture.asset(
+                                AppImages.star,
+                                color: ele <= branchCommet.rating!.toInt()
+                                    ? HexColor('#FFCB45') // selected
+                                    : HexColor('#F2F2F2'),
+                                width: 15,
+                                height: 15,
+                              ),
+                            )
+                            .toList(),
+                      ),
+
+                      Text(
+                        'Time / Date',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  if (branchCommet.productTags != null &&
+                      branchCommet.productTags!.isNotEmpty)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: branchCommet.productTags!
+                            .map(
+                              (ele) => Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: HexColor('#9040444B'),
+                                  borderRadius: BorderRadius.circular(47),
+                                ),
+                                child: Text(
+                                  ele,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          SizedBox(height: 20),
+
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 21),
+            decoration: BoxDecoration(
+              color: HexColor('#40444B'),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              branchCommet.content,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Inter',
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget commentForm() {
+    return Form(
+      key: formKey,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+        child: Row(
+          spacing: 16,
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: commentController,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  fillColor: HexColor('#40444B'),
+                  filled: true,
+                  hintText: 'Write a review...',
+                  hintStyle: TextStyle(
+                    color: HexColor('#72777A'),
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 13,
+                    horizontal: 15,
+                  ),
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.only(right: 15.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          showAddRating = !showAddRating;
+                          curRating = 0;
+                        });
+                      },
+                      child: SvgPicture.asset(
+                        AppImages.star,
+                        color: HexColor('#808080'),
+                      ),
+                    ),
+                  ),
+
+                  suffixIconConstraints: BoxConstraints(
+                    maxWidth: 42,
+                    maxHeight: 42,
+                    minWidth: 42,
+                    minHeight: 42,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(47),
+                  ),
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: isLoading ? () {} : handleSumbit,
+              borderRadius: BorderRadius.circular(100),
+              child: Container(
+                width: 43,
+                height: 43,
+                decoration: BoxDecoration(
+                  color: HexColor('#3B74FF'),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    AppImages.send,
+                    width: 23,
+                    height: 23,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

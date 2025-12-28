@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:phluowise/contants/app_image.dart';
+import 'package:phluowise/controllers/appwrite_controller.dart';
 import 'package:phluowise/extensions/context_extension.dart';
+import 'package:phluowise/models/user_model.dart';
 import 'package:phluowise/utils/hexColor.dart';
 import 'package:phluowise/utils/validations.dart';
 import 'package:phluowise/widgets/button.dart';
 import 'package:phluowise/widgets/input_field.dart';
+import 'package:provider/provider.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -23,6 +26,29 @@ class _EditProfileState extends State<EditProfile> {
   final phone2Controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  void _init() {
+    Future.microtask(() {
+      final authProvider = Provider.of<AppwriteAuthProvider>(
+        context,
+        listen: false,
+      );
+
+      final userData = authProvider.userData;
+
+      if (userData != null) {
+        fullNameController.text = userData.fullName ?? '';
+        phone1Controller.text = userData.phoneNumber ?? '';
+        emailController.text = userData.email ?? '';
+      }
+    });
+  }
+
+  @override
   void dispose() {
     fullNameController.clear();
     idController.clear();
@@ -34,9 +60,21 @@ class _EditProfileState extends State<EditProfile> {
 
   @override
   Widget build(BuildContext context) {
+    final appWrite = context.watch<AppwriteAuthProvider>();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: HexColor('#202225'),
+        title: Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w500,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
         leading: IconButton(
           onPressed: () {
             Navigator.of(context).pop();
@@ -49,12 +87,18 @@ class _EditProfileState extends State<EditProfile> {
           child: Center(
             child: SizedBox(
               width: context.screenWidth * .9,
-              child: Column(spacing: 40, children: [editProfile(), content()]),
+              child: Column(
+                children: [
+                  SizedBox(height: 25),
+                  editProfile(),
+                  SizedBox(height: 40),
+                  content(),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    
     );
   }
 
@@ -103,6 +147,7 @@ class _EditProfileState extends State<EditProfile> {
   }
 
   Widget content() {
+
     return Form(
       key: formKey,
       child: Column(
@@ -112,6 +157,7 @@ class _EditProfileState extends State<EditProfile> {
             controller: fullNameController,
             keyboardType: TextInputType.name,
             hintText: 'Full Name',
+
             prefixIcon: AppImages.profile,
             validator: Validations.nameValidator,
           ),
