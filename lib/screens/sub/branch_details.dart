@@ -3,8 +3,11 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_controller.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dotted_decoration/dotted_decoration.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_advanced_switch/flutter_advanced_switch.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 
 import 'package:flutter_svg/svg.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
@@ -83,6 +86,14 @@ class _BranchDetailsState extends State<BranchDetails> {
 
   bool showBranchContact = false;
 
+  final _savePersonalController = ValueNotifier<bool>(false);
+  final _saveOthersController = ValueNotifier<bool>(false);
+  final _saveOrgsController = ValueNotifier<bool>(false);
+
+  bool _checkedSavePersonal = false;
+  bool _checkedSaveOthers = false;
+  bool _checkedSaveOrg = false;
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +103,37 @@ class _BranchDetailsState extends State<BranchDetails> {
         _updateTotalForIndex(i);
       });
     }
+
+    _savePersonalController.addListener(() {
+      setState(() {
+        if (_savePersonalController.value) {
+          _checkedSavePersonal = true;
+          print(_savePersonalController.value);
+        } else {
+          _checkedSavePersonal = false;
+          print(_savePersonalController.value);
+        }
+      });
+    });
+
+    _saveOthersController.addListener(() {
+      setState(() {
+        if (_saveOthersController.value) {
+          _checkedSaveOthers = true;
+        } else {
+          _checkedSaveOthers = false;
+        }
+      });
+    });
+    _saveOrgsController.addListener(() {
+      setState(() {
+        if (_saveOrgsController.value) {
+          _checkedSaveOrg = true;
+        } else {
+          _checkedSaveOrg = false;
+        }
+      });
+    });
   }
 
   void _updateTotalForIndex(int index) {
@@ -467,7 +509,7 @@ class _BranchDetailsState extends State<BranchDetails> {
       context: context,
       bounce: true,
       closeProgressThreshold: 20,
-      enableDrag: false,
+      enableDrag: true,
       isDismissible: true,
       backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -482,7 +524,7 @@ class _BranchDetailsState extends State<BranchDetails> {
               padding: EdgeInsets.only(bottom: bottomInset),
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * .23,
+                  maxHeight: MediaQuery.of(context).size.height * .22,
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
@@ -504,7 +546,7 @@ class _BranchDetailsState extends State<BranchDetails> {
                             width: 200,
                             height: 5,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: HexColor('#F5F5F5F5'),
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
@@ -542,36 +584,45 @@ class _BranchDetailsState extends State<BranchDetails> {
                           ),
                         ),
 
-                        SizedBox(height: 11),
+                        SizedBox(height: 18),
 
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          spacing: 20,
-                          children: [
-                            Expanded(
-                              child: Button(
-                                buttonText: 'Cancel',
-                                fontSize: 14,
-                                borderRadius: 100,
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            spacing: 20,
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 44,
+                                  child: Button(
+                                    buttonText: 'Cancel',
+                                    fontSize: 14,
+                                    borderRadius: 100,
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
 
-                            Expanded(
-                              child: Button(
-                                buttonText: 'Confirm',
-                                fontSize: 14,
-                                borderRadius: 100,
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  showProductList();
-                                },
+                              Expanded(
+                                child: Button(
+                                  height: 44,
+                                  buttonText: 'Confirm',
+                                  fontSize: 14,
+                                  borderRadius: 100,
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    showProductList();
+                                  },
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+
+                        SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -706,6 +757,7 @@ class _BranchDetailsState extends State<BranchDetails> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 30.0),
                           child: Button(
+                            height: 46,
                             buttonText: 'Continue',
                             fontSize: 18,
                             borderRadius: 20,
@@ -734,7 +786,7 @@ class _BranchDetailsState extends State<BranchDetails> {
       context: context,
       bounce: true,
       closeProgressThreshold: 20,
-      enableDrag: false,
+      enableDrag: true,
       isDismissible: true,
       backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -748,7 +800,7 @@ class _BranchDetailsState extends State<BranchDetails> {
               padding: EdgeInsets.only(bottom: bottomInset),
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * .5,
+                  maxHeight: MediaQuery.of(context).size.height * .47,
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
@@ -779,29 +831,29 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         InkWell(
                           onTap: () {
-                            // DatePicker.showDatePicker(
-                            //   context,
-                            //   showTitleActions: true,
-                            //   minTime: DateTime.now(),
-                            //   maxTime: DateTime(
-                            //     DateTime.now().year + 2,
-                            //     DateTime.now().month,
-                            //     DateTime.now().day,
-                            //   ),
-                            //   onChanged: (date) {
-                            //     print('change $date');
-                            //   },
-                            //   onConfirm: (date) {
-                            //     print('confirm $date');
-                            //   },
-                            //   currentTime: DateTime.now(),
-                            // );
+                            DatePicker.showDatePicker(
+                              context,
+                              showTitleActions: true,
+                              minTime: DateTime.now(),
+                              maxTime: DateTime(
+                                DateTime.now().year + 2,
+                                DateTime.now().month,
+                                DateTime.now().day,
+                              ),
+                              onChanged: (date) {
+                                print('change $date');
+                              },
+                              onConfirm: (date) {
+                                print('confirm $date');
+                              },
+                              currentTime: DateTime.now(),
+                            );
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: 40,
-                              vertical: 8,
+                              vertical: 10,
                             ),
                             decoration: BoxDecoration(
                               color: HexColor('#292B2F'),
@@ -854,24 +906,24 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         InkWell(
                           onTap: () {
-                            // DatePicker.showTimePicker(
-                            //   context,
-                            //   showTitleActions: true,
+                            DatePicker.showTimePicker(
+                              context,
+                              showTitleActions: true,
 
-                            //   onChanged: (date) {
-                            //     print('change $date');
-                            //   },
-                            //   onConfirm: (date) {
-                            //     print('confirm $date');
-                            //   },
-                            //   currentTime: DateTime.now(),
-                            // );
+                              onChanged: (date) {
+                                print('change $date');
+                              },
+                              onConfirm: (date) {
+                                print('confirm $date');
+                              },
+                              currentTime: DateTime.now(),
+                            );
                           },
 
                           child: Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: 40,
-                              vertical: 8,
+                              vertical: 10,
                             ),
                             decoration: BoxDecoration(
                               color: HexColor('#292B2F'),
@@ -922,30 +974,83 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         SizedBox(height: 25),
 
-                        InputField(
-                          controller: TextEditingController(),
-                          hintText: 'Add additional Information',
-                          fillColor: HexColor('#292B2F'),
-                          keyboardType: TextInputType.multiline,
-                          maxLines: 4,
-                          hintStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Roboto',
-                            color: HexColor('#99FFFFFF'),
+                        SizedBox(
+                          height: 106,
+                          child: TextFormField(
+                            keyboardType: TextInputType.multiline,
+                            expands: true,
+                            maxLines: null,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Roboto',
+                            ),
+                            textAlignVertical: TextAlignVertical.top,
+                            decoration: InputDecoration(
+                              hintText: 'Add additional Information',
+                              filled: true,
+                              fillColor: HexColor('#292B2F'),
+                              hintStyle: TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Roboto',
+                                color: HexColor('#99FFFFFF'),
+                              ),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: HexColor('#40444B'),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: HexColor('#40444B'),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: AppColors.primary,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: HexColor('#FF7576'),
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              errorStyle: TextStyle(
+                                color: HexColor('#FF7576'),
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
 
                         SizedBox(height: 15),
 
-                        Button(
-                          buttonText: 'Continue',
-                          fontSize: 18,
-                          borderRadius: 20,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            agreeTCPayment();
-                          },
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Button(
+                            buttonText: 'Continue',
+                            fontSize: 18,
+                            borderRadius: 20,
+                            height: 47,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              // agreeTCPayment();
+                              selfRecipient();
+                            },
+                          ),
                         ),
+
+                        SizedBox(height: 30),
                       ],
                     ),
                   ),
@@ -1312,7 +1417,7 @@ class _BranchDetailsState extends State<BranchDetails> {
               padding: EdgeInsets.only(bottom: bottomInset),
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * .75,
+                  maxHeight: MediaQuery.of(context).size.height * .77,
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
@@ -1525,6 +1630,7 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
                               'Save this for future orders',
@@ -1534,6 +1640,19 @@ class _BranchDetailsState extends State<BranchDetails> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
                               ),
+                            ),
+
+                            AdvancedSwitch(
+                              controller: _savePersonalController,
+                              activeColor: HexColor('#2C9043'),
+                              inactiveColor: Colors.grey,
+                              borderRadius: BorderRadius.all(
+                                const Radius.circular(100),
+                              ),
+
+                              width: 40.0,
+                              height: 20.0,
+                              enabled: true,
                             ),
                           ],
                         ),
@@ -1550,11 +1669,13 @@ class _BranchDetailsState extends State<BranchDetails> {
                               borderRadius: 100,
                               onPressed: () {
                                 Navigator.of(context).pop();
-                                showPaymentOption();
+                                reviewOrder();
                               },
                             ),
                           ),
                         ),
+
+                        SizedBox(height: 30),
                       ],
                     ),
                   ),
@@ -1820,6 +1941,7 @@ class _BranchDetailsState extends State<BranchDetails> {
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
                               'Save this for future orders',
@@ -1829,6 +1951,19 @@ class _BranchDetailsState extends State<BranchDetails> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
                               ),
+                            ),
+
+                            AdvancedSwitch(
+                              controller: _saveOthersController,
+                              activeColor: HexColor('#2C9043'),
+                              inactiveColor: Colors.grey,
+                              borderRadius: BorderRadius.all(
+                                const Radius.circular(100),
+                              ),
+
+                              width: 40.0,
+                              height: 20.0,
+                              enabled: true,
                             ),
                           ],
                         ),
@@ -1845,7 +1980,7 @@ class _BranchDetailsState extends State<BranchDetails> {
                               borderRadius: 100,
                               onPressed: () {
                                 Navigator.of(context).pop();
-                                showPaymentOption();
+                                reviewOrder();
                               },
                             ),
                           ),
@@ -2135,9 +2270,9 @@ class _BranchDetailsState extends State<BranchDetails> {
                         ),
 
                         SizedBox(height: 20),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
                               'Save this for future orders',
@@ -2147,6 +2282,18 @@ class _BranchDetailsState extends State<BranchDetails> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
                               ),
+                            ),
+
+                            AdvancedSwitch(
+                              controller: _saveOrgsController,
+                              activeColor: HexColor('#2C9043'),
+                              inactiveColor: Colors.grey,
+                              borderRadius: BorderRadius.all(
+                                const Radius.circular(100),
+                              ),
+                              width: 40.0,
+                              height: 20.0,
+                              enabled: true,
                             ),
                           ],
                         ),
@@ -2159,6 +2306,417 @@ class _BranchDetailsState extends State<BranchDetails> {
                             width: 300,
                             child: Button(
                               buttonText: 'Confirm',
+                              fontSize: 14,
+                              borderRadius: 100,
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                reviewOrder();
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void reviewOrder() {
+    showMaterialModalBottomSheet(
+      context: context,
+      bounce: true,
+      closeProgressThreshold: 20,
+      enableDrag: false,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * .88,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+                  ),
+                  color: HexColor('#40444B'),
+                ),
+                child: Center(
+                  child: SizedBox(
+                    width: context.screenWidth * 0.9,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 11),
+
+                        Center(
+                          child: Container(
+                            width: 200,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 20),
+
+                        Center(
+                          child: Text(
+                            'Review your order',
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 16),
+
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          spacing: 20,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: HexColor('#292B2F'),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Center(
+                                child: SvgPicture.asset(AppImages.calendar),
+                              ),
+                            ),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 6,
+                                children: [
+                                  Text(
+                                    'Pickup Time',
+                                    style: TextStyle(
+                                      color: HexColor('#80FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    '3 June 2022, 15:36',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Roboto',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 16),
+
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: HexColor('#80262626'),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Order Summary',
+                                style: TextStyle(
+                                  color: HexColor('#80FFFFFF'),
+                                  fontFamily: 'Roboto',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '1x Sachets water (500ml bag)',
+                                    style: TextStyle(
+                                      color: HexColor('#FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    'GHS 12.00',
+                                    style: TextStyle(
+                                      color: HexColor('#FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '1x Sachets water (500ml bag)',
+                                    style: TextStyle(
+                                      color: HexColor('#FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    'GHS 12.00',
+                                    style: TextStyle(
+                                      color: HexColor('#FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '1x Sachets water (500ml bag)',
+                                    style: TextStyle(
+                                      color: HexColor('#FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    'GHS 12.00',
+                                    style: TextStyle(
+                                      color: HexColor('#FFFFFF'),
+                                      fontFamily: 'Roboto',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 16),
+
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing: 16,
+                          children: [
+                            Text(
+                              'Add additional Information',
+                              style: TextStyle(
+                                color: HexColor('#80FFFFFF'),
+                                fontFamily: 'Roboto',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+
+                            // No profile found
+                            Container(
+                              padding: EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: HexColor('#DADADA'),
+                                  width: 0.2,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                'Please call me on 024XXXXXXX when you arrive at the main gate. The security guard will direct you.',
+                                style: TextStyle(
+                                  color: HexColor('#80FFFFFF'),
+                                  fontFamily: 'Roboto',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 16),
+
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: HexColor('#80262626'),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Subtotal',
+                                        style: TextStyle(
+                                          color: HexColor('#FFFFFF'),
+                                          fontFamily: 'Roboto',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+
+                                      Text(
+                                        'GHS 62.00',
+                                        style: TextStyle(
+                                          color: HexColor('#FFFFFF'),
+                                          fontFamily: 'Roboto',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 8),
+
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Service Fee',
+                                        style: TextStyle(
+                                          color: HexColor('#FFFFFF'),
+                                          fontFamily: 'Roboto',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+
+                                      Text(
+                                        'GHS 62.00',
+                                        style: TextStyle(
+                                          color: HexColor('#FFFFFF'),
+                                          fontFamily: 'Roboto',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 20),
+
+                                  Container(
+                                    decoration: DottedDecoration(
+                                      dash: [5, 5],
+                                      color: HexColor('#808080'),
+                                    ),
+                                  ),
+
+                                  Container(
+                                    padding: EdgeInsets.all(20),
+                                    margin: EdgeInsets.only(top: 29, bottom: 20),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: HexColor('#975102'),
+                                        width: 1,
+                                      ),
+                                      color: HexColor('#33E8B931'),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                                      children: [
+                                        SvgPicture.asset(AppImages.danger),
+
+                                        SizedBox(width: 10,),
+
+                                        Expanded(
+                                          child: Text(
+                                            'Please note: Delivery fees are charged by the water company, not Phluowise. Payment must be made upon delivery to confirm receipt.',
+                                            style: TextStyle(
+                                              color: HexColor('#80FFFFFF'),
+                                              fontFamily: 'Roboto',
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 50),
+
+                        Center(
+                          child: SizedBox(
+                            height: 44,
+                            width: 300,
+                            child: Button(
+                              buttonText: 'Continue',
                               fontSize: 14,
                               borderRadius: 100,
                               onPressed: () {
@@ -2692,13 +3250,16 @@ class _BranchDetailsState extends State<BranchDetails> {
 
         Padding(
           padding: const EdgeInsets.only(left: 30, right: 30, bottom: 20),
-          child: Button(
-            buttonText: 'Schedule Pickup',
-            borderRadius: 30,
-            fontSize: 16,
-            onPressed: () {
-              showConsent(scaffoldContext);
-            },
+          child: SizedBox(
+            height: 47,
+            child: Button(
+              buttonText: 'Schedule Pickup',
+              borderRadius: 30,
+              fontSize: 16,
+              onPressed: () {
+                showConsent(scaffoldContext);
+              },
+            ),
           ),
         ),
       ],

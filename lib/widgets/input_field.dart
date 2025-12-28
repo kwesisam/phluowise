@@ -19,6 +19,7 @@ class InputField extends StatelessWidget {
   final HexColor? borderColor;
   final int? maxLines;
   final int? minLines;
+  final bool? isExpand;
   final void Function(String)? onChanged;
   const InputField({
     super.key,
@@ -30,7 +31,13 @@ class InputField extends StatelessWidget {
     this.keyboardType,
     this.suffixIcon,
     this.prefixIcon,
-    this.validator, this.hintStyle, this.fillColor, this.borderColor, this.maxLines, this.onChanged, this.minLines,
+    this.validator,
+    this.hintStyle,
+    this.fillColor,
+    this.borderColor,
+    this.maxLines,
+    this.onChanged,
+    this.minLines, this.isExpand,
   });
 
   @override
@@ -43,7 +50,8 @@ class InputField extends StatelessWidget {
       validator: validator,
       onChanged: onChanged,
       minLines: minLines ?? 1,
-      maxLines:maxLines ?? 1 ,    
+      maxLines: maxLines,
+      expands: isExpand ?? false,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
@@ -51,11 +59,13 @@ class InputField extends StatelessWidget {
         fillColor: fillColor ?? HexColor('#40444B'),
         filled: true,
         
-        hintStyle: hintStyle ?? TextStyle(
-          color: HexColor('#DDDDDD'),
-          fontSize: 16,
-          fontFamily: 'Inter',
-        ),
+        hintStyle:
+            hintStyle ??
+            TextStyle(
+              color: HexColor('#DDDDDD'),
+              fontSize: 16,
+              fontFamily: 'Inter',
+            ),
         prefixIcon: prefixIcon != null
             ? Padding(
                 padding: const EdgeInsets.only(left: 16.0, right: 5),
@@ -76,7 +86,7 @@ class InputField extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: borderColor ??  HexColor('#40444B')),
+          borderSide: BorderSide(color: borderColor ?? HexColor('#40444B')),
           borderRadius: BorderRadius.circular(16),
         ),
         focusedBorder: OutlineInputBorder(
@@ -87,7 +97,7 @@ class InputField extends StatelessWidget {
           borderSide: BorderSide(color: HexColor('#FF7576')),
           borderRadius: BorderRadius.circular(16),
         ),
-        errorStyle: TextStyle(color: HexColor('#FF7576'), fontSize: 14)
+        errorStyle: TextStyle(color: HexColor('#FF7576'), fontSize: 14),
       ),
     );
   }

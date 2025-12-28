@@ -52,6 +52,8 @@ class AppImages {
   static const String star2= 'assets/icons/star2.svg';
   static const String send= 'assets/icons/send.svg';
   static const String call= 'assets/icons/call.svg';
+  static const String calendar= 'assets/icons/calendar.svg';
+  static const String danger= 'assets/icons/danger.svg';
 
   static const String logo = 'assets/images/logo.png';
   static const String ob1 = 'assets/images/ob1.png';
